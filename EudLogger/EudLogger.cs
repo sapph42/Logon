@@ -697,7 +697,9 @@ public class EudLogger {
         };
         return NetworkInterface
             .GetAllNetworkInterfaces()
-            .Where(ni => allowedNetworkInterfaceType.Contains(ni.NetworkInterfaceType));
+            .Where(ni => allowedNetworkInterfaceType.Contains(ni.NetworkInterfaceType))
+            .GroupBy(ni => ni.Id)
+            .Select(g => g.First());
     }
     private bool GetOneDriveStatus() {
         const int AVAILABILITY_STATUS = 303;
