@@ -11,6 +11,7 @@ internal static class JsonSettings {
         Converters = {
             new AdapterCollectionConverter(),
             new AdapterDataConverter(),
+            new CachedDataConverter(),
             new CachedEntryConverter(),
             new LoginDataConverter(),
             new StatDataConverter()

@@ -81,6 +81,7 @@
     <Compile Include="Classes\Data.cs">
       <Nullable>enable</Nullable>
     </Compile>
+    <Compile Include="Classes\JsonConverters\CachedDataConverter.cs" />
     <Compile Include="EudLogger.cs">
       <Nullable>enable</Nullable>
     </Compile>
