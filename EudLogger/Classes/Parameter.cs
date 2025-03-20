@@ -7,10 +7,10 @@ using WebParam = System.Web.UI.WebControls.Parameter;
 namespace EudLogger.Classes;
 
 internal class Parameter<T> {
-    [JsonInclude] public string Name;
-    [JsonInclude] public T? Value;
-    [JsonIgnore] public int? Size;
-    [JsonIgnore] public SqlDbType? DbType;
+    public string Name;
+    public T? Value;
+    public int? Size;
+    public SqlDbType? DbType;
     public bool IsNull => Value is null;
     public string SqlName => $"@{Name}";
     public SqlMetaData SqlMetaData => new(Name, DbType!.Value, Size!.Value);
@@ -19,7 +19,6 @@ internal class Parameter<T> {
         Name = name;
         DbType = dbType;
     }
-    [JsonConstructor]
     public Parameter(string name, T? value) {
         Name = name;
         Value = value;

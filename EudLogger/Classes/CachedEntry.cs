@@ -6,7 +6,6 @@ internal class CachedEntry {
     public AdapterCollection? adapterCollection;
     public StatData? statData;
 
-    [JsonConstructor]
     public CachedEntry(DateTime cacheDate, LoginData? login, AdapterCollection? adapters, StatData? stats) {
         CacheDate = cacheDate;
         loginData = login;

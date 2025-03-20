@@ -28,7 +28,7 @@ public class EudLogger {
     private readonly PrinterCollection _printerData  = new();
     private readonly StatData          _statData     = new();
     private Regex                      _terminalServer;
-    private readonly Logging           Logger        = new();
+    public  Logging                    Logger        = new();
     public bool                        CacheNeeded   => _loginData.ToCache && _statData.ToCache && _adapterData.ToCache;
     public string?                     JsonCache     = null;
     #endregion
