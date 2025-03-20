@@ -12,6 +12,6 @@ internal class AdapterCollectionConverter : JsonConverter<AdapterCollection> {
     }
 
     public override void Write(Utf8JsonWriter writer, AdapterCollection value, JsonSerializerOptions options) {
-        JsonSerializer.Serialize(writer, (List<AdapterData>)value.Where(v => v is not null), options);
+        JsonSerializer.Serialize(writer, (List<AdapterData>)value.Where(v => v is not null).ToList(), options);
     }
 }
