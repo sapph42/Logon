@@ -12,6 +12,7 @@ using System.Text;
 using System.Collections;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Threading;
 
 #nullable enable
 namespace EudLogger; 
@@ -23,17 +24,35 @@ public class EudLogger {
     private readonly AdapterCollection _adapterData  = new();
     private readonly AppCollection     _appData      = new();
     private readonly string            _computerName = Environment.MachineName;
+    private SqlConnection?              _connection;
     private FileLoggingPaths           _logPaths     = new();
     private readonly LoginData         _loginData    = new();
     private readonly PrinterCollection _printerData  = new();
     private readonly StatData          _statData     = new();
     private Regex                      _terminalServer;
     public  Logging                    Logger        = new();
-    public bool                        CacheNeeded   => _loginData.ToCache && _statData.ToCache && _adapterData.ToCache;
+    public bool                        CacheNeeded   => _loginData.ToCache || _statData.ToCache || _adapterData.ToCache;
     public string?                     JsonCache     = null;
     #endregion
     #region Properties
-    public SqlConnection? Connection { get; set; }
+    public SqlConnection? Connection {
+        get => _connection; 
+        set {
+            if (_connection != value) {
+                if (_connection is not null) {
+                    int retryCount = 3;
+                    while (_connection.State == ConnectionState.Executing && retryCount-- > 0) {
+                        Thread.Sleep(100);
+                    }
+                    if (_connection?.State != ConnectionState.Executing) {
+                        _connection?.Close();
+                        _connection?.Dispose();
+                    }
+                }
+                _connection = value;
+            }
+        }
+    }
     public string? DebugLogFile {
         get => Logger.LogFile;
         set => Logger.LogFile = value;
@@ -188,8 +207,8 @@ public class EudLogger {
                 }
             }
         } finally {
+            cmd?.Connection?.Close();
             cmd?.Dispose();
-            Connection?.Close();
         }
         return true;
     }
@@ -217,12 +236,35 @@ public class EudLogger {
                 Logger.Append("AppData: AppDataInsert complete.");
                 return;
             } catch (Exception ex) {
+#if DEBUG
+                var currentEx = ex;
+                string indentLevel = "    ";
+                Logger.Append($"AppData: Failed to execute stored procedure {cmd.CommandText}.");
+                Logger.Append("    Connection Details:");
+                Logger.Append($"    Data Source:     {cmd.Connection.DataSource}");
+                Logger.Append($"    Initial Catalog: {cmd.Connection.Database}");
+                Logger.Append("    Exception Details:");
+                while (currentEx is not null) {
+                    if (currentEx != ex)
+                        Logger.Append($"{indentLevel}InnerException--");
+                    Logger.Append($"{indentLevel}Message--");
+                    Logger.Append($"{indentLevel}  {currentEx.Message}");
+                    Logger.Append($"{indentLevel}TargetSite--");
+                    Logger.Append($"{indentLevel}  {ex.TargetSite}");
+                    Logger.Append($"{indentLevel}Source--");
+                    Logger.Append($"{indentLevel}  {ex.Source}");
+                    currentEx = currentEx.InnerException;
+                    indentLevel += "  ";
+                }
+                Logger.Append($"    StackTrace--");
+                Logger.Append($"      {ex.StackTrace}");
+#else
                 Logger.Append($"AppData: Failed to execute stored procedure AppDataInsert. {ex.Message}");
-                return;
+#endif
             }
         } finally {
+            cmd?.Connection?.Close();
             cmd?.Dispose();
-            Connection?.Close();
         }
     }
     private bool LoginDataToDb() => LoginDataToDb(_loginData);
@@ -255,8 +297,8 @@ public class EudLogger {
                 return false;
             }
         } finally {
+            cmd?.Connection?.Close();
             cmd?.Dispose();
-            Connection?.Close();
         }
     }
     private void PrinterDataToDb() {
@@ -268,7 +310,20 @@ public class EudLogger {
             try {
                 cmd.Parameters.Add(_printerData.GetSqlParameter());
             } catch (Exception ex) {
+#if DEBUG
+                Logger.Append($"PrinterData: failed to assign parameters for PrinterDataInsert.");
+                Logger.Append("    Message--");
+                Logger.Append($"    {ex.Message}");
+                Logger.Append("    Source--");
+                Logger.Append($"    {ex.Source}");
+                Logger.Append("    StackTrace--");
+                Logger.Append($"    {ex.StackTrace}");
+                Logger.Append("    TargetSite--");
+                Logger.Append($"    {ex.TargetSite}");
+
+#else
                 Logger.Append($"PrinterData: failed to assign parameters for PrinterDataInsert. {ex.Message}");
+#endif
             }
             if (Connection.State == ConnectionState.Closed) {
                 try {
@@ -287,8 +342,8 @@ public class EudLogger {
                 return;
             }
         } finally {
+            cmd?.Connection?.Close();
             cmd?.Dispose();
-            Connection?.Close();
         }
     }
     private bool StatDataToDb() => StatDataToDb(_statData);
@@ -321,17 +376,17 @@ public class EudLogger {
                 return false;
             }
         } finally {
+            cmd?.Connection?.Close();
             cmd?.Dispose();
-            Connection?.Close();
         }
     }
-    #endregion
-    #endregion
+#endregion
+#endregion
     #region File Write Methods
     private void AppDataToFile() {
         string destination = Path.Combine(_logPaths.AppLogs, $"{_computerName}.Applications.csv");
         StringBuilder sb = new();
-        sb.AppendLine($"{_computerName},{Environment.UserName},APPLICATIONS");
+        sb.AppendLine("COMPUTERNAME,USERNAME,APPLICATIONS");
         foreach (var app in _appData) {
             sb.Append(_computerName);
             sb.Append(",");
@@ -346,7 +401,11 @@ public class EudLogger {
                 sb.AppendLine(app.ApplicationName.Value);
             }
         }
-        File.WriteAllText(destination, sb.ToString());
+        try {
+            File.WriteAllText(destination, sb.ToString());
+        } catch (Exception ex) {
+            Logger.Append($"AppData: File write failed. {ex.Message}");
+        }
     }
     private void LoginDataToFile() {
         DateTime LogTime = DateTime.Now;
@@ -363,7 +422,7 @@ public class EudLogger {
             FileName = "ipconfig",
             Arguments = "/all",
             RedirectStandardOutput = true,
-            UseShellExecute = true,
+            UseShellExecute = false,
             CreateNoWindow = true
         };
         using Process process = new() { StartInfo = psi };
@@ -378,26 +437,46 @@ public class EudLogger {
         LogonEntry += "\r\n";
 
 
-        string ThisMachineLog = _logPaths.MachineLogs + _computerName + ".log";
-        string ThisMachineStats = _logPaths.MachineStats + _computerName + ".LOG";
-        string ThisUserLogon = _logPaths.UserLogon + user + ".log";
-        string ThisComputerLogon = _logPaths.ComputerLogon + _computerName + ".log";
-
+        string ThisMachineLog = _computerName + ".log";
+        string ThisMachineStats = _computerName + ".LOG";
+        string ThisUserLogon = user + ".log";
+        string ThisComputerLogon = _computerName + ".log";
+        ThisMachineLog = Path.Combine(_logPaths.MachineLogs, ThisMachineLog);
+        ThisMachineStats = Path.Combine(_logPaths.MachineStats, ThisMachineStats);
+        ThisUserLogon = Path.Combine(_logPaths.UserLogon, ThisUserLogon);
+        ThisComputerLogon = Path.Combine(_logPaths.ComputerLogon, ThisComputerLogon);
 
         if (Directory.Exists(_logPaths.MachineLogs)) {
-            File.AppendAllText(ThisMachineLog, MachineLogEntry);
+            try {
+                File.AppendAllText(ThisMachineLog, MachineLogEntry);
+            } catch (Exception ex) {
+                Logger.Append($"LoginData: MachineLog File write failed. {ex.Message}");
+            }
         }
         if (Directory.Exists(_logPaths.MachineStats)) {
-            File.AppendAllText(ThisMachineStats, MachineStatEntry.ToString());
+            try {
+                File.AppendAllText(ThisMachineStats, MachineStatEntry.ToString());
+            } catch (Exception ex) {
+                Logger.Append($"LoginData: MachineStats File write failed. {ex.Message}");
+            }
         }
         if (Directory.Exists(_logPaths.UserLogon)) {
-            File.AppendAllText(ThisUserLogon, LogonEntry);
+            try {
+                File.AppendAllText(ThisUserLogon, LogonEntry);
+            } catch (Exception ex) {
+                Logger.Append($"LoginData: UserLogon File write failed. {ex.Message}");
+            }
         }
         if (Directory.Exists(_logPaths.ComputerLogon)) {
-            File.AppendAllText(ThisComputerLogon, LogonEntry);
+            try {
+                File.AppendAllText(ThisComputerLogon, LogonEntry);
+            } catch (Exception ex) {
+                Logger.Append($"LoginData: ComputerLogon File write failed. {ex.Message}");
+            }
         }
     }
     private void PrinterDataToFile() {
+        string destination = Path.Combine(_logPaths.PrinterLogs, $"{_computerName}.Printers.csv");
         StringBuilder sb = new();
         sb.AppendLine("Computer, User, PORT, Network, Name, Location, Servername, ShareName, INAD, DriverName, Local_TCPIPPort");
         foreach (var printer in _printerData) {
@@ -405,9 +484,14 @@ public class EudLogger {
                 continue;
             sb.AppendLine(printer.ToCsvRow());
         }
-        File.WriteAllText(_logPaths.PrinterLogs, sb.ToString());
+        try {
+            File.WriteAllText(destination, sb.ToString());
+        } catch (Exception ex) {
+            Logger.Append($"PrinterData: File write failed. {ex.Message}");
+        }
     }
     private void StatDataToFile() {
+        string destination = Path.Combine(_logPaths.StatLogs, $"{_computerName}.txt");
         StringBuilder inv = new();
         inv.AppendLine(DateTime.Now.ToString($"ddd MM/dd/yyy"));
         inv.AppendLine($"Computer Name: {_computerName}");
@@ -417,7 +501,11 @@ public class EudLogger {
         inv.AppendLine($"Operating System: {_statData.OSVersion}");
         inv.AppendLine($"Total Memory: {_statData.Memory.Value}");
         inv.AppendLine($"OS Install Date: {_statData.InstallDate.Value}");
-        File.WriteAllText(_logPaths.StatLogs, inv.ToString());
+        try {
+            File.WriteAllText(destination, inv.ToString());
+        } catch (Exception ex) {
+            Logger.Append($"StatData: File write failed. {ex.Message}");
+        }
     }
     #endregion
     #region Data Collection Methods
@@ -427,6 +515,7 @@ public class EudLogger {
         RegistryKey x64Key = Registry.LocalMachine.OpenSubKey(x64KeyPath);
         RegistryKey x86Key = Registry.LocalMachine.OpenSubKey(x86KeyPath);
         RegistryKey[] both = new[] { x64Key, x86Key };
+        List<AppData> apps = new();
         foreach (var archKey in both) {
             foreach (var key in archKey.GetSubKeyNames()) {
                 string? displayName = archKey.OpenSubKey(key)?.GetValue("DisplayName")?.ToString();
@@ -437,9 +526,10 @@ public class EudLogger {
                 else
                     output = displayName ?? quietName ?? null;
                 if (output is not null)
-                    _appData.Add(output);
+                    apps.Add(new AppData(output));
             }
         }
+        _appData.AddRange(apps.Distinct());
     }
     private void CollectAdapterData() {
         foreach (var adapter in GetActiveNICData()) {
@@ -472,7 +562,8 @@ public class EudLogger {
             CollectAdapterData();
         _loginData.UserDN.Value = System.DirectoryServices.AccountManagement.UserPrincipal.Current.DistinguishedName;
         _loginData.UPN.Value = System.DirectoryServices.AccountManagement.UserPrincipal.Current.UserPrincipalName;
-        _loginData.ODStatus.Value = ODStatus && GetOneDriveStatus();
+        _loginData.ODStatus.Value = ODStatus || GetOneDriveStatus();
+        Logger.Append($"GetOneDriveStatus: {GetOneDriveStatus()}");
         _loginData.Ex.Value = Exception;
         _loginData.Admin.Value = _loginData.UserDN.Value.Contains("OU=NPE");
     }
@@ -494,6 +585,7 @@ public class EudLogger {
             }
             _printerData.Add(thisPrinter);
         }
+        Logger.Append($"PrinterData: {_printerData.Count} printers enumerated.");
     }
     private void CollectStatData() {
         const double gig = 1073741824;
@@ -506,18 +598,18 @@ public class EudLogger {
             _statData.SerialNumber.Value = searcher.Get().OfType<ManagementObject>().First()["SerialNumber"].ToString();
             if (cache is not null) {
                 cache.SetValue("SN", _statData.SerialNumber.Value, RegistryValueKind.String);
-                Logger.Append("HardwareInventory: BIOS data cached in registry. Skipping Win32_Bios");
             }
         } else {
+            Logger.Append("StatData: BIOS data cached in registry. Skipping Win32_Bios");
             _statData.SerialNumber.Value = cache.GetValue("SN").ToString();
         }
 
-        Logger.Append("HardwareInventory: Fetching CPU Count from Windows API");
+        Logger.Append("StatData: Fetching CPU Count from Windows API");
         _statData.Cores.Value = HardwareStats
             .GetLogicalProcessorInformation()
             .Where(slpi => slpi.Relationship == HardwareStats.LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore)
             .Count();
-        Logger.Append("HardwareInventory: Fetching CPU data from Registry");
+        Logger.Append("StatData: Fetching CPU data from Registry");
         _statData.CPUName.Value = Utility.GetRegValue(
                 Registry.LocalMachine,
                 @"HARDWARE\DESCRIPTION\System\CentralProcessor\0",
@@ -539,9 +631,9 @@ public class EudLogger {
                 "SystemProductName")?
             .ToString();
         _statData.OSVersion.Value = Environment.OSVersion.Version.ToString();
-        Logger.Append("HardwareInventory: Fetching RAM from Windows API");
+        Logger.Append("StatData: Fetching RAM from Windows API");
         _statData.Memory.Value = (int)Math.Round(HardwareStats.GetTotalMem() / gig);
-        Logger.Append("HardwareInventory: Fetching HDD data from Windows API");
+        Logger.Append("StatData: Fetching HDD data from Windows API");
         _statData.HDDSize.Value = 0;
         foreach (var drive in DriveInfo.GetDrives()) {
             if (drive.Name == @"C:\") {
@@ -570,7 +662,7 @@ public class EudLogger {
                     _statData.InstallDate.Value = DateTime.ParseExact(installDateString.Substring(0, 14), "yyyyMMddHHmmss", null);
                 }
             } catch (Exception ex) {
-                Logger.Append($"Failed to retrieve InstallDate: {ex.Message}");
+                Logger.Append($"StatData: Failed to retrieve InstallDate: {ex.Message}");
             }
         }
         var uptime = new PerformanceCounter("System", "System Up Time");
@@ -584,18 +676,18 @@ public class EudLogger {
                 .OfType<Radio>()
                 .Where(r => r.Kind == RadioKind.Bluetooth && r.State == RadioState.On)
                 .Count();
-            Logger.Append($"HardwareInventory: Active BT Radios {btCount}");
+            Logger.Append($"StatData: Active BT Radios {btCount}");
             _statData.BTState.Value = btCount > 0;
         } catch {
-            Logger.Append($"HardwareInventory: BT State indeterminate");
+            Logger.Append($"StatData: BT State indeterminate");
         }
         try {
-            var tpmVer = HardwareStats.GetTPMVersion();
+            var tpmVer = HardwareStats.GetTPMVersion(Logger);
             _statData.TPMVersion.Value = $"{tpmVer.Major}.{tpmVer.Minor}";
         } catch {
             _statData.TPMVersion.Value = "Unk";
         }
-        Logger.Append($"HardwareInventory: TPM Version Detected As: {_statData.TPMVersion.Value}");
+        Logger.Append($"StatData: TPM Version Detected As: {_statData.TPMVersion.Value}");
     }
     private IEnumerable<NetworkInterface> GetActiveNICData() {
         var allowedNetworkInterfaceType = new[] {
@@ -665,6 +757,35 @@ public class EudLogger {
             Logger.LogFile = paths.DebugLogs;
         }
     }
+    public void SetLoggingPaths(
+        string? MachineLogs, 
+        string? MachineStats, 
+        string? UserLogon, 
+        string? ComputerLogon, 
+        string? AppLogs, 
+        string? StatLogs, 
+        string? DebugLogs = null) {
+        _logPaths = new FileLoggingPaths() {
+            MachineLogs = MachineLogs,
+            MachineStats = MachineStats,
+            UserLogon = UserLogon,
+            ComputerLogon = ComputerLogon,
+            AppLogs = AppLogs,
+            StatLogs = StatLogs,
+            DebugLogs = DebugLogs
+        };
+    }
+    public void SetLoggingPaths(string?[] paths) {
+        _logPaths = new FileLoggingPaths() {
+            MachineLogs = paths[0],
+            MachineStats = paths[1],
+            UserLogon = paths[2],
+            ComputerLogon = paths[3],
+            AppLogs = paths[4],
+            StatLogs = paths[5],
+            DebugLogs = paths.Length > 6 ? paths[6] : null
+        };
+    }
     public void TransmitCacheData() {
         if (JsonCache is null) {
             return;
@@ -698,23 +819,78 @@ public class EudLogger {
     }
     public bool TryGetCacheData(string? oldCache, bool attemptTransmit, out string? updatedCache) {
         if (string.IsNullOrWhiteSpace(oldCache) && !CacheNeeded) {
+            Logger.Append("GetCache: oldCache is empty and cache unneeded, nothing to return");
             updatedCache = null;
             return false;
         }
         CachedData cache = new();
         if (oldCache is not null) {
-            cache = JsonSerializer.Deserialize<CachedData>(oldCache, JsonSettings.Options) ?? new();
+            try {
+                Logger.Append("GetCache: Deserializing oldCache");
+                cache = JsonSerializer.Deserialize<CachedData>(oldCache, JsonSettings.Options) ?? new();
+            } catch {
+                Logger.Append("GetCache: oldCache deserialization failed. Continuing with empty old CachedData object");
+            }
         }
         if (CacheNeeded) {
-            CachedEntry today = new(DateTime.Now, _loginData, _adapterData, _statData);
-            cache.Add(today);
+            try {
+                Logger.Append("GetCache: Building new cache");
+                CachedEntry today = new(DateTime.Now, _loginData, _adapterData, _statData);
+                cache.Add(today);
+            } catch {
+                Logger.Append("GetCache: Building new cache failed. Continuing with old CachedData object");
+            }
         }
         if (attemptTransmit && !CacheNeeded) {
-            updatedCache = TransmitCacheData(oldCache!);
-            return updatedCache is not null;
+            try {
+                updatedCache = TransmitCacheData(oldCache!);
+                return updatedCache is not null;
+            } catch {
+                Logger.Append("GetCache: No new cache. Transmission threw an impossible error. Returning oldCache");
+            }
         }
-        updatedCache = JsonSerializer.Serialize<CachedData>(cache, JsonSettings.Options);
-        return true;
+        try {
+            Logger.Append("GetCache: Serializing cache object");
+            updatedCache = JsonSerializer.Serialize<CachedData>(cache, JsonSettings.Options);
+            return true;
+        } catch (Exception ex) {
+#if DEBUG
+            var currentEx = ex;
+            string indentLevel = "    ";
+            Logger.Append($"GetCache: Serialization of combined cache failed.");
+            Logger.Append("    Exception Details:");
+            while (currentEx is not null) {
+                if (currentEx != ex)
+                    Logger.Append($"{indentLevel}InnerException--");
+                Logger.Append($"{indentLevel}Message--");
+                Logger.Append($"{indentLevel}  {currentEx.Message}");
+                Logger.Append($"{indentLevel}TargetSite--");
+                Logger.Append($"{indentLevel}  {ex.TargetSite}");
+                Logger.Append($"{indentLevel}Source--");
+                Logger.Append($"{indentLevel}  {ex.Source}");
+                currentEx = currentEx.InnerException;
+                indentLevel += "  ";
+            }
+            Logger.Append($"    StackTrace--");
+            Logger.Append($"      {ex.StackTrace}");
+#else
+            Logger.Append("GetCache: Serialization of combined cache failed. Data loss of new data");
+#endif
+            updatedCache = oldCache;
+            return true; //This seems weird, but the return value indicates if there is information in updatedCache, not if anything worked
+        }
+    }
+    public void WriteData(bool adapter, bool app, bool login, bool printer, bool stat) {
+        if (adapter)
+            WriteAdapterData();
+        if (app)
+            WriteAppData();
+        if (login)
+            WriteLoginData();
+        if (printer)
+            WritePrinterData();
+        if (stat)
+            WriteStatData();
     }
     public void WriteAdapterData() {
         if (TsCheck())
@@ -729,8 +905,12 @@ public class EudLogger {
             Logger.Append("WriteAdapterData: Collection of adapter data failed.");
             return;
         }
+        Logger.Append("WriteAdapterData: Trasmitting AdapterData to DB");
         if (!AdapterDataToDb()) {
             Logger.Append("WriteAdapterData: Transmission of adapter data failed. No further DB attempts will be made. Caching enabled.");
+            foreach (var adapter in _adapterData) {
+                adapter.ToCache = true;
+            }
             LogToDB = false;
             LogToFile = true;
             _adapterData.CacheDate = DateTime.Now;
@@ -755,9 +935,11 @@ public class EudLogger {
             return;
         }
         if (appLogToFile) {
+            Logger.Append("WriteAppData: Writing AppData to file");
             AppDataToFile();
         }
         if (LogToDB) {
+            Logger.Append("WriteAppData: Trasmitting AppData to DB");
             AppDataToDb();
         }
     }
@@ -786,10 +968,11 @@ public class EudLogger {
             Logger.Append("WriteLoginData: Collection of Login data failed.");
             return;
         }
-
+        Logger.Append("WriteLoginData: Writing LoginData to File");
         if (loginToFile) {
             LoginDataToFile();
         }
+        Logger.Append("WriteLoginData: Trasmitting LoginData to DB");
         if (loginToDb) {
             if (!LoginDataToDb()) {
                 Logger.Append("WriteLoginData: Transmission of login data failed. No further DB attempts will be made. Caching enabled.");
@@ -818,9 +1001,11 @@ public class EudLogger {
             return;
         }
         if (printerLogToFile) {
+            Logger.Append("WritePrinterData: Writing PrinterData to File");
             PrinterDataToFile();
         }
         if (LogToDB) {
+            Logger.Append("WritePrinterData: Trasmitting PrinterData to DB");
             PrinterDataToDb();
         }
     }
@@ -853,9 +1038,11 @@ public class EudLogger {
         }
 
         if (loginToFile) {
+            Logger.Append("WriteStatData: Writing StatData to File");
             StatDataToFile();
         }
         if (loginToDb) {
+            Logger.Append("WriteStatData: Trasmitting StatData to DB");
             if (!StatDataToDb()) {
                 Logger.Append("WriteStatData: Transmission of stat data failed. No further DB attempts will be made. Caching enabled.");
                 LogToDB = false;
@@ -865,7 +1052,7 @@ public class EudLogger {
             }
         }
     }
-    #endregion
+#endregion
 
 
 }   

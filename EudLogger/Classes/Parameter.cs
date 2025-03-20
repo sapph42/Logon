@@ -9,11 +9,10 @@ namespace EudLogger.Classes;
 internal class Parameter<T> {
     public string Name;
     public T? Value;
-    public int? Size;
+    public long? Size;
     public SqlDbType? DbType;
     public bool IsNull => Value is null;
     public string SqlName => $"@{Name}";
-    public SqlMetaData SqlMetaData => new(Name, DbType!.Value, Size!.Value);
     public SqlParameter SqlParam => new(SqlName, DbType) { Value = Value ?? (object)DBNull.Value };
     public Parameter(string name, SqlDbType dbType) {
         Name = name;
@@ -28,6 +27,24 @@ internal class Parameter<T> {
         Name = name;
         DbType = dbType;
         Size = size;
+    }
+    public SqlMetaData GetSqlMetaData() {
+        SqlDbType type = DbType ?? BestFit(Value);
+        switch (type) {
+            case SqlDbType.Binary:
+            case SqlDbType.Image:
+            case SqlDbType.VarBinary:
+                return new SqlMetaData(Name, type, Size ?? SqlMetaData.Max);
+            case SqlDbType.Char:
+            case SqlDbType.NChar:
+            case SqlDbType.NText:
+            case SqlDbType.NVarChar:
+            case SqlDbType.Text:
+            case SqlDbType.VarChar:
+                return new SqlMetaData(Name, type, Size ?? (long?)Value?.ToString()?.Length ?? -1);
+            default:
+                return new SqlMetaData(Name, type);
+        }
     }
     private static SqlDbType BestFit(object? value) {
         if (value is null)

@@ -25,7 +25,7 @@ public class Logging {
     public void Append(string LogString) => Append(LogString, true);
     public void Append(string LogString, bool IncludeDate) {
         Append(
-            new string[1] { LogString },
+            LogString.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None),
             IncludeDate
         );
     }
@@ -44,7 +44,9 @@ public class Logging {
             if (string.IsNullOrWhiteSpace(strToWrite)) {
                 return;
             }
-            logs.AppendLine(strToWrite);
+            string[] linesToWrite = strToWrite.Split(new[] {"\r\n", "\n" }, StringSplitOptions.None);
+            foreach (string line in linesToWrite)
+                logs.AppendLine(line);
         }
     }
     public bool WriteFile() {

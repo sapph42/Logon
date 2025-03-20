@@ -13,7 +13,7 @@ internal abstract class Data {
             .Where(f => f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(Parameter<>))
             .Select(f => f.GetValue(this) as dynamic)
             .Where(param => param is not null)
-            .Select(param => param.SqlMetaData)
+            .Select(param => param.GetSqlMetaData())
             .Cast<SqlMetaData>()
             .ToArray();
     }

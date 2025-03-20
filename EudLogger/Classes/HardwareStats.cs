@@ -134,8 +134,9 @@ internal class HardwareStats {
         public uint Revision;
     }
 
-    public static TPMVersionInfo GetTPMVersion() {
+    public static TPMVersionInfo GetTPMVersion(ScriptLogging.Logging Logger) {
         int result = Tbsi_GetTpmVersionInfo(out TPMVersionInfo versionInfo);
+        Logger.Append($"GetTPMVersion: Result: {result}; TPMVI: {versionInfo.ToString()}");
         if (result != 0) {
             throw new Exception($"Failed to retrieve TPM version. Error code: {result}");
         }

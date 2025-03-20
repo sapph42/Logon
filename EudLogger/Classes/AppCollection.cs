@@ -21,11 +21,13 @@ internal class AppCollection : List<AppData> {
     }
     private List<SqlDataRecord> GetApplicationData() {
         List<SqlDataRecord> appList = new();
-        foreach (var app in this) {
-            if (app.ApplicationName.Value is null)
-                continue;
+        var uniqueApps = this
+            .Where(app => app.ApplicationName.Value is not null)
+            .Select(app => app.ApplicationName.Value)
+            .Distinct();
+        foreach (var app in uniqueApps) {
             SqlDataRecord record = new(TableType);
-            record.SetString(record.GetOrdinal("applicationname"), app.ApplicationName.Value);
+            record.SetString(record.GetOrdinal("applicationname"), app);
             appList.Add(record);
         }
         return appList;
