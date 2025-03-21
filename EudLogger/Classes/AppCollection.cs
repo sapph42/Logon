@@ -1,7 +1,7 @@
 ﻿using Microsoft.SqlServer.Server;
 using System.Data.SqlClient;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal class AppCollection : List<AppData> {
     internal SqlMetaData TableType = new("applicationname", SqlDbType.VarChar, -1);

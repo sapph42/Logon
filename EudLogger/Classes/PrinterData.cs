@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal class PrinterData : Data {
     public Parameter<string> PrinterName = new("printername", SqlDbType.VarChar, 50);

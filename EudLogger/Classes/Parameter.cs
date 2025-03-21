@@ -4,7 +4,7 @@ using Microsoft.SqlServer.Server;
 using WebParam = System.Web.UI.WebControls.Parameter;
 
 #nullable enable
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal class Parameter<T> {
     public string Name;

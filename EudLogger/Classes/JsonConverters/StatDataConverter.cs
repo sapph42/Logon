@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 
 #nullable enable
-namespace EudLogger.Classes.JsonConverters;
+namespace SapphTools.Logging.Classes.JsonConverters;
 internal class StatDataConverter : JsonConverter<StatData> {
     public override StatData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
         if (reader.TokenType != JsonTokenType.StartObject)

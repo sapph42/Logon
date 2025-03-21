@@ -4,7 +4,7 @@ using Microsoft.SqlServer.Server;
 using System.Text;
 
 #nullable enable
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 internal abstract class Data {
     public bool ToCache { get; set; } = false;
     public SqlMetaData[] GetSqlMetaData() {

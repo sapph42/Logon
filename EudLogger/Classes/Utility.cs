@@ -1,6 +1,6 @@
 ﻿using Microsoft.Win32;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal static class Utility {
     public static object? GetRegValue(RegistryKey hive, string keyPath, string valueName) {

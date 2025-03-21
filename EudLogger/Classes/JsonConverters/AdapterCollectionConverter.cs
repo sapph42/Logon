@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace EudLogger.Classes.JsonConverters;
+namespace SapphTools.Logging.Classes.JsonConverters;
 internal class AdapterCollectionConverter : JsonConverter<AdapterCollection> {
     public override AdapterCollection Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
         var adapters = JsonSerializer.Deserialize<List<AdapterData>>(ref reader, options);

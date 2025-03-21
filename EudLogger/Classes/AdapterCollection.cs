@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices.ComTypes;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 #nullable enable
 internal class AdapterCollection : List<AdapterData> {

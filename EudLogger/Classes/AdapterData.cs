@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 #nullable enable
 internal class AdapterData : Data {

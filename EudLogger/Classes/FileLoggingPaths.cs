@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace EudLogger;
+namespace SapphTools.Logging;
 
 #nullable enable
 public struct FileLoggingPaths {

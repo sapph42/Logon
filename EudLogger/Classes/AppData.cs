@@ -1,4 +1,4 @@
-﻿namespace EudLogger.Classes;
+﻿namespace SapphTools.Logging.Classes;
 
 internal class AppData : Data {
     public Parameter<string> ApplicationName = new("ApplicationName", SqlDbType.VarChar);

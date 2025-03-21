@@ -3,7 +3,7 @@ using System.Data.SqlClient;
 using System.Reflection;
 
 #nullable enable
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 internal class PrinterCollection : List<PrinterData> {
 
     internal SqlMetaData[] TableType => this.FirstOrDefault().GetSqlMetaData();

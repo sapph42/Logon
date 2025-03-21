@@ -1,8 +1,7 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using EudLogger.Classes.JsonConverters;
+using SapphTools.Logging.Classes.JsonConverters;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal static class JsonSettings {
     public static readonly JsonSerializerOptions Options = new() {

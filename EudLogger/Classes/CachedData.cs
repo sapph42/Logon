@@ -4,6 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 
 internal class CachedData : List<CachedEntry> {}

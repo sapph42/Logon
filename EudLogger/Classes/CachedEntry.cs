@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace EudLogger.Classes;
+namespace SapphTools.Logging.Classes;
 internal class CachedEntry {
     public DateTime CacheDate;
     public LoginData? loginData;

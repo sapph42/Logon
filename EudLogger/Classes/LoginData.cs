@@ -1,4 +1,4 @@
-﻿namespace EudLogger.Classes;
+﻿namespace SapphTools.Logging.Classes;
 
 #nullable enable
 internal class LoginData : Data {

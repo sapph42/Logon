@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EudLogger", "EudLogger\EudLogger.csproj", "{9E5AF7F3-3113-4C2C-9356-03219781E2F6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SapphTools.Logging.EudLogging", "EudLogger\SapphTools.Logging.EudLogging.csproj", "{9E5AF7F3-3113-4C2C-9356-03219781E2F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptLogging", "ScriptLogging\ScriptLogging.csproj", "{E8F541FF-25CD-4DB2-B54E-19E6D0445C67}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SapphTools.Logging.SapphLogger", "ScriptLogging\SapphTools.Logging.SapphLogger.csproj", "{E8F541FF-25CD-4DB2-B54E-19E6D0445C67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{95634691-9506-40A1-AEAE-B885C4C1B1F2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{EBF8C35E-7C48-4D02-AA2F-22D6DBB816AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{E8F541FF-25CD-4DB2-B54E-19E6D0445C67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8F541FF-25CD-4DB2-B54E-19E6D0445C67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8F541FF-25CD-4DB2-B54E-19E6D0445C67}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95634691-9506-40A1-AEAE-B885C4C1B1F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95634691-9506-40A1-AEAE-B885C4C1B1F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{95634691-9506-40A1-AEAE-B885C4C1B1F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95634691-9506-40A1-AEAE-B885C4C1B1F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBF8C35E-7C48-4D02-AA2F-22D6DBB816AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBF8C35E-7C48-4D02-AA2F-22D6DBB816AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBF8C35E-7C48-4D02-AA2F-22D6DBB816AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBF8C35E-7C48-4D02-AA2F-22D6DBB816AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
