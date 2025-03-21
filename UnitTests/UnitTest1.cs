@@ -1,5 +1,4 @@
 ﻿using SapphTools.Logging;
-using SapphTools.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -21,7 +20,7 @@ namespace UnitTests {
             EudLogger.LogToTS = true;
             EudLogger.LogToDB = true;
             EudLogger.LogToFile = true;
-            Log.EnableDebug = true;
+            Log.EnableDebug = false;
             Log.Log("Off domain test");
             Log.LogMode();
             EudLogger.Logger = Log;

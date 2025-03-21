@@ -619,16 +619,36 @@ public class EudLogger {
             }
         }
         try {
-            int regInstallDate = Int32
-                .Parse(
-                    Utility.GetRegValue(
+            var val = Utility.GetRegValue(
                         Registry.LocalMachine,
                         @"\SOFTWARE\Microsoft\Windows NT\Current Version",
                         "InstallDate"
-                    )!
-                    .ToString()
-                );
-            _statData.InstallDate.Value = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) + TimeSpan.FromSeconds(regInstallDate);
+                    );
+            string? valStr = val?.ToString();
+            if (valStr is null) {
+                try {
+                    using var searcher = new ManagementObjectSearcher("SELECT InstallDate FROM Win32_OperatingSystem");
+                    using var queryResult = searcher.Get();
+                    var os = queryResult.OfType<ManagementObject>().FirstOrDefault();
+
+                    if (os?["InstallDate"] is string installDateString) {
+                        _statData.InstallDate.Value = DateTime.ParseExact(installDateString.Substring(0, 14), "yyyyMMddHHmmss", null);
+                    }
+                } catch (Exception ex) {
+                    Log(LogLevel.Debug, "StatData: Failed to retrieve InstallDate: ", ex);
+                }
+            } else {
+                int regInstallDate = Int32
+                    .Parse(
+                        Utility.GetRegValue(
+                            Registry.LocalMachine,
+                            @"\SOFTWARE\Microsoft\Windows NT\Current Version",
+                            "InstallDate"
+                        )!
+                        .ToString()
+                    );
+                _statData.InstallDate.Value = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) + TimeSpan.FromSeconds(regInstallDate);
+            }
         } catch {
             try {
                 using var searcher = new ManagementObjectSearcher("SELECT InstallDate FROM Win32_OperatingSystem");

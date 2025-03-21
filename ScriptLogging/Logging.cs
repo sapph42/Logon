@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -59,7 +60,7 @@ public class SapphLogger : ILogger {
             return false;
         }
     }
-    private void Log<TState>(string logLevel, TState state, Exception? exception) {
+    private void Log(string logLevel, object state, Exception? exception) {
         string dateFormatted = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}]";
         if (state is IEnumerable<string> states && states.Count() > 1) {
             var stateList = states.ToList();
@@ -70,6 +71,7 @@ public class SapphLogger : ILogger {
             Append($"{logLevel} {dateFormatted} {justState}");
         } else if (state is null) {
             Append($"{logLevel} {dateFormatted}");
+        //} else if (state is FormattedLogValues vals) { 
         } else if (state is not string) {
             Append($"{logLevel} {dateFormatted}");
         } else if (state is string stateStr) {
@@ -88,13 +90,13 @@ public class SapphLogger : ILogger {
     public void Log(LogLevel logLevel, string message, Exception? exception) {
         Log(logLevel, new EventId(), message, exception, (message, exception) => "");
     }
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+    public void Log(LogLevel logLevel, EventId eventId, string message, Exception? exception, Func<string, Exception?, string> formatter) {
         if (logLevel == LogLevel.None) {
-            if (state is string blank && string.IsNullOrWhiteSpace(blank))
+            if (message is string blank && string.IsNullOrWhiteSpace(blank))
                 Append("");
             return;
         }
-        
+
         int logLevelWidth = 12; // Choose a fixed width for uniformity
         string logLevelFormatted = FormatLogLevel(logLevel, logLevelWidth);
 
@@ -103,13 +105,13 @@ public class SapphLogger : ILogger {
             logLevelFormatted = (logLevel == LogLevel.Debug || EnableDebug)
                                 ? FormatLogLevel("Debug/Error", logLevelWidth)
                                 : FormatLogLevel("Error", logLevelWidth);
-            if (logLevel == LogLevel.Debug && EnableDebug) 
-                Log(logLevelFormatted, state, exception);
+            if (logLevel == LogLevel.Debug && EnableDebug)
+                Log(logLevelFormatted, message, exception);
             else if (EnableDebug) {
-                Log(FormatLogLevel(LogLevel.Error, logLevelWidth), state, null);
+                Log(FormatLogLevel(LogLevel.Error, logLevelWidth), message, null);
                 Append(exception.Message);
             } else if (logLevel == LogLevel.Debug) {
-                Log(logLevelFormatted, state, null);
+                Log(logLevelFormatted, message, null);
                 Append(exception.Message);
             }
 
@@ -119,8 +121,11 @@ public class SapphLogger : ILogger {
                 logLevelFormatted = FormatLogLevel("Debug/Error", logLevelWidth);
             }
 
-            Log(logLevelFormatted, state, null);
+            Log(logLevelFormatted, message, null);
         }
+    }
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+        Log(logLevel, state?.ToString() ?? "", exception);
     }
     public void LogMode() {
         Log(LogLevel.Information, $"Full debuging enabled: {EnableDebug}");
