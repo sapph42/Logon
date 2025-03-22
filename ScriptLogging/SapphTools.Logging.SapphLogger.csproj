@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Logging.cs" />
+    <Compile Include="LogLevel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -60,19 +61,6 @@
     <None Include="ScriptLogging.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="FodyWeavers.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Costura.Fody">
-      <Version>6.0.0</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Fody">
-      <Version>6.9.2</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
       <Version>9.0.3</Version>
     </PackageReference>
@@ -84,6 +72,9 @@
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.6.2</Version>
+    </PackageReference>
+    <PackageReference Include="System.ValueTuple">
+      <Version>4.6.1</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
