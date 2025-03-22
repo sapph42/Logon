@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace SapphTools.Logging.Classes;
+﻿namespace SapphTools.Logging.Classes;
 
 #nullable enable
 internal class AdapterData : Data {

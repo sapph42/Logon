@@ -1,5 +1,5 @@
-﻿using Microsoft.SqlServer.Server;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
+using Microsoft.SqlServer.Server;
 
 namespace SapphTools.Logging.Classes;
 

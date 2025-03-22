@@ -1,6 +1,6 @@
-﻿using Microsoft.SqlServer.Server;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
 using System.Reflection;
+using Microsoft.SqlServer.Server;
 
 #nullable enable
 namespace SapphTools.Logging.Classes;

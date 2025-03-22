@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
 
+#nullable enable
 namespace SapphTools.Logging.Classes;
-
 internal static class Utility {
     public static object? GetRegValue(RegistryKey hive, string keyPath, string valueName) {
         return hive

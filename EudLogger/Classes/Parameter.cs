@@ -30,21 +30,11 @@ internal class Parameter<T> {
     }
     public SqlMetaData GetSqlMetaData() {
         SqlDbType type = DbType ?? BestFit(Value);
-        switch (type) {
-            case SqlDbType.Binary:
-            case SqlDbType.Image:
-            case SqlDbType.VarBinary:
-                return new SqlMetaData(Name, type, Size ?? SqlMetaData.Max);
-            case SqlDbType.Char:
-            case SqlDbType.NChar:
-            case SqlDbType.NText:
-            case SqlDbType.NVarChar:
-            case SqlDbType.Text:
-            case SqlDbType.VarChar:
-                return new SqlMetaData(Name, type, Size ?? (long?)Value?.ToString()?.Length ?? -1);
-            default:
-                return new SqlMetaData(Name, type);
-        }
+        return type switch {
+            SqlDbType.Binary or SqlDbType.Image or SqlDbType.VarBinary => new SqlMetaData(Name, type, Size ?? SqlMetaData.Max),
+            SqlDbType.Char or SqlDbType.NChar or SqlDbType.NText or SqlDbType.NVarChar or SqlDbType.Text or SqlDbType.VarChar => new SqlMetaData(Name, type, Size ?? (long?)Value?.ToString()?.Length ?? -1),
+            _ => new SqlMetaData(Name, type),
+        };
     }
     private static SqlDbType BestFit(object? value) {
         if (value is null)

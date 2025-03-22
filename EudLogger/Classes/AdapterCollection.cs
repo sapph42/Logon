@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices.ComTypes;
-
-namespace SapphTools.Logging.Classes;
+﻿namespace SapphTools.Logging.Classes;
 
 #nullable enable
 internal class AdapterCollection : List<AdapterData> {

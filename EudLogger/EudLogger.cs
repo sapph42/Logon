@@ -1,22 +1,22 @@
-﻿using System.Data.SqlClient;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using System.Net.NetworkInformation;
-using System.IO;
-using System.Printing;
-using Microsoft.Win32;
-using System.Management;
-using Windows.Devices.Radios;
-using System.Text;
-using System.Collections;
+﻿using System.Collections;
+using System.Data.SqlClient;
 using System.Diagnostics;
+using System.IO;
+using System.Management;
+using System.Net.NetworkInformation;
+using System.Printing;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
+using Windows.Devices.Radios;
 
 #nullable enable
 namespace SapphTools.Logging; 
-public class EudLogger {
+public class EudLogger : IDisposable {
     #region Constants
 
     #endregion
@@ -1046,8 +1046,11 @@ public class EudLogger {
         }
         _statData.ToCache |= doCache;
     }
-#endregion
-
+    public void Dispose() {
+        Connection?.Close();
+        Connection?.Dispose();
+    }
+    #endregion
 
 }   
 

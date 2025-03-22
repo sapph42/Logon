@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Contexts;
 using Microsoft.Extensions.Logging;
 
 #nullable enable
@@ -162,9 +161,8 @@ internal class HardwareStats {
     }
     private static IntPtr CreateTbsContext() {
         var contextParams = new TbsContextParams { version = 1, flags = 0 };
-        IntPtr context;
 
-        int result = Tbsi_Context_Create(ref contextParams, out context);
+        _ = Tbsi_Context_Create(ref contextParams, out IntPtr context);
 
         return context;
     }
