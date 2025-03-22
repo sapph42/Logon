@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -86,11 +84,13 @@ public class SapphLogger : ILogger {
     }
     public void Log(string message) => Log(LogLevel.Information, message, null);
     public void Log(string message, Exception? exception) => Log(LogLevel.Information, message, exception);
+    public void Log(LL logLevel, string message) => Log((LogLevel)(int)logLevel, message);
     public void Log(LogLevel logLevel, string message) => Log(logLevel, message, null);
+    public void Log(LL logLevel, string message, Exception? exception) => Log((LogLevel)(int)logLevel, message, exception);
     public void Log(LogLevel logLevel, string message, Exception? exception) {
         Log(logLevel, new EventId(), message, exception, (message, exception) => "");
     }
-    public void Log(LogLevel logLevel, EventId eventId, string message, Exception? exception, Func<string, Exception?, string> formatter) {
+    public void Log(LogLevel logLevel, EventId _1, string message, Exception? exception, Func<string, Exception?, string> _2) {
         if (logLevel == LogLevel.None) {
             if (message is string blank && string.IsNullOrWhiteSpace(blank))
                 Append("");
