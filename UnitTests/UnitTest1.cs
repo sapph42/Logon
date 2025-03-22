@@ -1,9 +1,9 @@
-﻿using SapphTools.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
 using System.Data.SqlClient;
-using Microsoft.Extensions.Logging;
-using System;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SapphTools.Logging;
 
 namespace UnitTests {
     [TestClass]
