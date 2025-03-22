@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace SapphTools.Logging;
@@ -10,7 +12,7 @@ namespace SapphTools.Logging;
 #nullable enable
 public class SapphLogger : ILogger {
     #region Fields
-    private readonly StringBuilder logs;
+    internal readonly StringBuilder logs;
     public string Logs => logs.ToString();
     #endregion
     #region Properties
@@ -24,7 +26,7 @@ public class SapphLogger : ILogger {
         logs = new(5000);
     }
     #endregion
-    #region Methods
+    #region  Private Methods
     private void Append(string LogString) {
         Append(
             LogString.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
@@ -40,26 +42,12 @@ public class SapphLogger : ILogger {
                 logs.AppendLine(line.Trim());
         }
     }
-    public bool WriteFile() {
-        if (string.IsNullOrWhiteSpace(LogFile))
-            return false;
-        return WriteFile(LogFile);
+    private string FormatLogLevel(string logLevel, int width) {
+        return $"[{logLevel.PadLeft((width + logLevel.Length) / 2).PadRight(width)}]";
     }
-    public bool WriteFile(string? FileName) {
-        if (string.IsNullOrWhiteSpace(FileName))
-            return false;
-        try {
-            if (!Directory.Exists(Path.GetDirectoryName(FileName))) {
-                Directory.CreateDirectory(Path.GetDirectoryName(FileName));
-            }
-            File.WriteAllText(FileName, Logs, Encoding.UTF8);
-            return true;
-        } catch {
-            return false;
-        }
-    }
+    private string FormatLogLevel(LogLevel logLevel, int width) => FormatLogLevel(logLevel.ToString(), width);
     private void Log(string logLevel, object state, Exception? exception) {
-        string dateFormatted = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}]";
+        string dateFormatted = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.ffff}]";
         if (state is IEnumerable<string> states && states.Count() > 1) {
             var stateList = states.ToList();
             stateList[0] = $"{logLevel} {dateFormatted} {stateList[0]}";
@@ -82,6 +70,49 @@ public class SapphLogger : ILogger {
             Append($" -- Stack Trace\r\n{exception.StackTrace}");
         }
     }
+    private static List<LogChunk> ParseLogChunks(SapphLogger logger) {
+        var chunks = new List<LogChunk>();
+        LogChunk? currentChunk = null;
+
+        foreach (string line in logger.logs.ToString().Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)) {
+            var match = Regex.Match(line, @"(?:\[)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4})(?:\])");
+            if (match.Success) {
+                DateTime timestamp = DateTime.ParseExact(
+                    match.Groups[1].Value,
+                    "yyyy-MM-dd HH:mm:ss.ffff",
+                    CultureInfo.InvariantCulture
+                );
+
+                currentChunk = new LogChunk { Timestamp = timestamp };
+                currentChunk.Lines.Add(line);
+                chunks.Add(currentChunk);
+            } else if (currentChunk is not null) {
+                currentChunk.Lines.Add(line);
+            }
+        }
+        return chunks;
+    }
+    #endregion
+    #region Interface Required Methods
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull {
+        string message = $"{state} Begin";
+        Console.WriteLine(message);
+        Append(message);
+        return new DisposableScope(() => Append($"{state} End"));
+    }
+    public bool IsEnabled(LogLevel logLevel) {
+        return logLevel switch {
+            LogLevel.Information or LogLevel.Error or
+                LogLevel.Warning or LogLevel.Debug or
+                LogLevel.None => true,
+            _ => false,
+        };
+    }
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+        Log(logLevel, state?.ToString() ?? "", exception);
+    }
+    #endregion
+    #region Public Methods
     public void Log(string message) => Log(LogLevel.Information, message, null);
     public void Log(string message, Exception? exception) => Log(LogLevel.Information, message, exception);
     public void Log(LL logLevel, string message) => Log((LogLevel)(int)logLevel, message);
@@ -124,30 +155,42 @@ public class SapphLogger : ILogger {
             Log(logLevelFormatted, message, null);
         }
     }
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
-        Log(logLevel, state?.ToString() ?? "", exception);
-    }
     public void LogMode() {
         Log(LogLevel.Information, $"Full debuging enabled: {EnableDebug}");
     }
-    public bool IsEnabled(LogLevel logLevel) {
-        return logLevel switch {
-            LogLevel.Information or LogLevel.Error or 
-                LogLevel.Warning or LogLevel.Debug or
-                LogLevel.None => true,
-            _ => false,
-        };
+    public void Merge(ILogger other) {
+        if (other is SapphLogger myLogger) {
+            var mergedChunks = ParseLogChunks(this)
+                .Concat(ParseLogChunks(myLogger))
+                .OrderBy(c => c.Timestamp);
+            logs.Clear();
+            foreach (var chunk in mergedChunks) {
+                foreach (var line in chunk.Lines) {
+                    logs.AppendLine(line);
+                }
+            }
+        }
     }
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull {
-        string message = $"{state} Begin";
-        Console.WriteLine(message);
-        Append(message);
-        return new DisposableScope(() => Append($"{state} End"));
+    public bool WriteFile() {
+        if (string.IsNullOrWhiteSpace(LogFile))
+            return false;
+        return WriteFile(LogFile);
     }
-    private string FormatLogLevel(string logLevel, int width) {
-        return $"[{logLevel.PadLeft((width + logLevel.Length) / 2).PadRight(width)}]";
+    public bool WriteFile(string? FileName) {
+        if (string.IsNullOrWhiteSpace(FileName))
+            return false;
+        try {
+            if (!Directory.Exists(Path.GetDirectoryName(FileName))) {
+                Directory.CreateDirectory(Path.GetDirectoryName(FileName));
+            }
+            File.WriteAllText(FileName, Logs, Encoding.UTF8);
+            return true;
+        } catch {
+            return false;
+        }
     }
-    private string FormatLogLevel(LogLevel logLevel, int width) => FormatLogLevel(logLevel.ToString(), width);
+    #endregion
+    #region Private Class
     private class DisposableScope : IDisposable {
         private readonly Action _onDispose;
         public DisposableScope(Action onDispose) => _onDispose = onDispose;

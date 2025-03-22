@@ -137,7 +137,7 @@ Function GenerateSQLConnection {
         [Parameter(Mandatory=$true)][string]$DBName,
         [ref]$Logger
     )
-    $Logger.Log('GenerateSQLConnection: Begin')
+    $Logger.Value.Log('GenerateSQLConnection: Begin')
     if ($ServerName -match '(?=^\\\\)?(?<server>[a-z0-9-]*)$') {
         $connectionString = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
         $connectionString["Server"] = $Matches.server
@@ -151,14 +151,14 @@ Function GenerateSQLConnection {
         }
         try {
             $c = New-Object System.Data.SqlClient.SQLConnection($connectionString.ToString())
-            $Logger.Log('GenerateSQLConnection: Sucessfully instantiated SQLConnection object')
+            $Logger.Value.Log('GenerateSQLConnection: Sucessfully instantiated SQLConnection object')
             return $c
         } catch {
-            $Logger.Log($(LL('Error')). 'GenerateSQLConnection: Failed to instantiate SQLConnection object')
+            $Logger.Value.Log($(LL('Error')). 'GenerateSQLConnection: Failed to instantiate SQLConnection object')
             return $null
         }
     } else {
-            $Logger.Log($(LL('Error')), 'GenerateSQLConnection: Invalid server name')
+            $Logger.Value.Log($(LL('Error')), 'GenerateSQLConnection: Invalid server name')
         return $null
     }
 }
@@ -180,7 +180,7 @@ Function CloseSQLConnection {
     )
     $Connection.Close()
     $Connection.Dispose()
-    $Logger.Log('CloseSQLConnection: Closed connection and disposed of SQLConnection object')
+    $Logger.Value.Log('CloseSQLConnection: Closed connection and disposed of SQLConnection object')
 }
 
 Function CleanCerts {
@@ -206,24 +206,24 @@ Function CleanCerts {
         foreach ($Cert in $PersonalStore) {
             if ($Cert.FriendlyName.Contains('CN=') -and
             $Cert.Subject.Contains($userEDIPI)) {
-                $Logger.Log('CleanCerts: ARA Cert retained')
+                $Logger.Value.Log('CleanCerts: ARA Cert retained')
                 continue
             }
             if ($Cert.FriendlyName.StartsWith('Signature') -and $Cert.EnhancedKeyUsageList -contains $CodeSigningType) {
-                $Logger.Log('CleanCerts: Code Signing Cert Retained')
+                $Logger.Value.Log('CleanCerts: Code Signing Cert Retained')
                 continue
             }
             if ($Cert.FriendlyName.StartsWith('Encryption') -or
             $Cert.FriendlyName.StartsWith('Signature') -or
             $Cert.FriendlyName.StartsWith('Authentication')) {
                 if (-not $Cert.Subject.Contains($userEDIPI)) {
-                    $Logger.Log('CleanCerts: Foreign Cert Removed')
+                    $Logger.Value.Log('CleanCerts: Foreign Cert Removed')
                     $CertPath = (Get-ChildItem | Where-Object {$_.Thumbprint -eq $Cert.Thumbprint} | Select-Object -Property PSPath).PSPath
                     Remove-Item $CertPath
                     continue
                 }
                 if ([datetime]$Cert.GetExpirationDateString() -lt [datetime]::Now) {
-                    $Logger.Log('CleanCerts: Expired Cert Removed')
+                    $Logger.Value.Log('CleanCerts: Expired Cert Removed')
                     $CertPath = (Get-ChildItem | Where-Object {$_.Thumbprint -eq $Cert.Thumbprint} | Select-Object -Property PSPath).PSPath
                     Remove-Item $CertPath
                     continue
@@ -231,21 +231,21 @@ Function CleanCerts {
                 if ($Cert.FriendlyName.StartsWith('Authentication')) {
                     $CurrentExp.Add([datetime]$Cert.GetExpirationDateString())
                 }
-                $Logger.Log('CleanCerts: Core certs retained')
+                $Logger.Value.Log('CleanCerts: Core certs retained')
                 continue
             }
             if ($Cert.Subject.Contains('Adobe')) {
-                $Logger.Log('CleanCerts: Adobe Certs Removed')
+                $Logger.Value.Log('CleanCerts: Adobe Certs Removed')
                 $CertPath = (Get-ChildItem | Where-Object {$_.Thumbprint -eq $Cert.Thumbprint} | Select-Object -Property PSPath).PSPath
                 Remove-Item $CertPath
                 continue
             }
             if ($Cert.Subject.Contains('SERIALNUMBER=')) {
                 if ($CurrentExp.Contains([datetime]$Cert.GetExpirationDateString())) {
-                    $Logger.Log('CleanCerts: Component cert retained')
+                    $Logger.Value.Log('CleanCerts: Component cert retained')
                     continue
                 } else {
-                    $Logger.Log('CleanCerts: Component cert removed for exp mismatch')
+                    $Logger.Value.Log('CleanCerts: Component cert removed for exp mismatch')
                     $CertPath = (Get-ChildItem | Where-Object {$_.Thumbprint -eq $Cert.Thumbprint} | Select-Object -Property PSPath).PSPath
                     Remove-Item $CertPath
                     continue
@@ -253,7 +253,7 @@ Function CleanCerts {
             }
         }
     } catch {
-        $Logger.Log($(LL('Debug')), 'CleanCerts: Error Generated', $_)
+        $Logger.Value.Log($(LL('Debug')), 'CleanCerts: Error Generated', $_)
     } finally {
         Pop-Location
     }
@@ -275,7 +275,7 @@ Function WebAttributeCheck {
     $GetDetailsOf_AVAILABILITY_STATUS = 303
     $Exception = ""
     try {
-        $Logger.Log('PIV Check: Starting check')
+        $Logger.Value.Log('PIV Check: Starting check')
         Import-Module pki
         Push-Location Cert:\CurrentUser\My
 
@@ -321,11 +321,11 @@ Function WebAttributeCheck {
         }
         $UserDataStore["UPDATE"] = (Get-Date).ToString('MM-dd-yy')
         foreach ($cert in (Get-ChildItem)) {
-            $Logger.Log("PIV Check: Cert: $($cert.Thumbprint) :: $($cert.Subject)")
-            $Logger.Log("    PIV Check: Cert PN: $($cert.Extensions.Format(1) -match 'Principal name=')")
-            $Logger.Log("    PIV Check: Cert PI: $($cert.Extensions.Format(1) -match 'Policy Identifier=2.16.840.1.101.')")
-            $Logger.Log("    PIV Check: Cert Issuer: $($cert.Issuer)")
-            $Logger.Log("    PIV Check: Cert Exp: $([datetime]$cert.GetExpirationDateString())")
+            $Logger.Value.Log("PIV Check: Cert: $($cert.Thumbprint) :: $($cert.Subject)")
+            $Logger.Value.Log("    PIV Check: Cert PN: $($cert.Extensions.Format(1) -match 'Principal name=')")
+            $Logger.Value.Log("    PIV Check: Cert PI: $($cert.Extensions.Format(1) -match 'Policy Identifier=2.16.840.1.101.')")
+            $Logger.Value.Log("    PIV Check: Cert Issuer: $($cert.Issuer)")
+            $Logger.Value.Log("    PIV Check: Cert Exp: $([datetime]$cert.GetExpirationDateString())")
         }
         $certAuth = Get-ChildItem |
             Where-Object {
@@ -359,17 +359,17 @@ Function WebAttributeCheck {
 	        $UserDataStore["CERTEXP"] = ""
 	        $UserDataStore["CA"] = ""
         }
-        $Logger.Log("PIV Check: UPN: $($UserDataStore["UPN"])")
-        $Logger.Log("PIV Check: CERTEXP: $($UserDataStore["CERTEXP"])")
-        $Logger.Log("PIV Check: CA: $($UserDataStore["CA"])")
+        $Logger.Value.Log("PIV Check: UPN: $($UserDataStore["UPN"])")
+        $Logger.Value.Log("PIV Check: CERTEXP: $($UserDataStore["CERTEXP"])")
+        $Logger.Value.Log("PIV Check: CA: $($UserDataStore["CA"])")
         if($certEnc){
 	        $UserDataStore["EMAIL"] = [regex]::Match($certEnc.extensions.format(1)[6], '(?:RFC822 Name=)(?<email>.*\.mil)').Groups['email'].Value
         }else{
 	        $UserDataStore["EMAIL"] = "NoEmailCert"
         }
-        $Logger.Log("PIV Check: EMAIL: $($UserDataStore["EMAIL"])")
+        $Logger.Value.Log("PIV Check: EMAIL: $($UserDataStore["EMAIL"])")
         $UserDataStore["HOST"] = $env:computername
-        $Logger.Log("PIV Check: HOST: $($UserDataStore["HOST"])")
+        $Logger.Value.Log("PIV Check: HOST: $($UserDataStore["HOST"])")
         $date = New-Object DateTime
         if (
             [DateTime]::TryParseExact($UserDataStore["UPDATE"], 'MM-dd-yy', $null, [System.Globalization.DateTimeStyles]::None, [ref] $date) -and
@@ -378,7 +378,7 @@ Function WebAttributeCheck {
         ) {
             $UserDataStore["ODStatus"] = "OneTrue"
             $OneDriveEnabled = $true
-            $Logger.Log("PIV Check: ODStatus: OneTrue selected based on previous state")
+            $Logger.Value.Log("PIV Check: ODStatus: OneTrue selected based on previous state")
         } else {
             try {
 	            $OneDriveDocs = "$env:OneDrive\Documents"
@@ -404,27 +404,27 @@ Function WebAttributeCheck {
                 ){
 		            $UserDataStore["ODStatus"] = "OneTrue"
                     $OneDriveEnabled = $true
-                    $Logger.Log("PIV Check: ODStatus: OneTrue selected based  on folder state")
+                    $Logger.Value.Log("PIV Check: ODStatus: OneTrue selected based  on folder state")
 	            } else {
 		            $UserDataStore["ODStatus"] = "OneFalse"
                     $OneDriveEnabled = $false
-                    $Logger.Log("PIV Check: ODStatus: OneFalse selected based on folder state")
+                    $Logger.Value.Log("PIV Check: ODStatus: OneFalse selected based on folder state")
 	            }
-                $Logger.Log("    PIV Check: ODStatus: Documents exist: $([System.IO.Directory]::Exists("$env:OneDrive\Documents"))")
-                $Logger.Log("    PIV Check: ODStatus: Desktop exist: $([System.IO.Directory]::Exists("$env:OneDrive\Desktop"))")
-                $Logger.Log("    PIV Check: ODStatus: Pictures exist: $([System.IO.Directory]::Exists("$env:OneDrive\Pictures"))")
-                $Logger.Log("    PIV Check: ODStatus: My Pictures exist: $([System.IO.Directory]::Exists("$env:OneDrive\My Pictures"))")
-                $Logger.Log("    PIV Check: ODStatus: Documents state: $DocsStatus")
-                $Logger.Log("    PIV Check: ODStatus: Desktop state: $DeskStatus")
-                $Logger.Log("    PIV Check: ODStatus: Pictures state: $PicsStatus")
-                $Logger.Log("    PIV Check: ODStatus: My Pictures state: $PicsStatus2")
+                $Logger.Value.Log("    PIV Check: ODStatus: Documents exist: $([System.IO.Directory]::Exists("$env:OneDrive\Documents"))")
+                $Logger.Value.Log("    PIV Check: ODStatus: Desktop exist: $([System.IO.Directory]::Exists("$env:OneDrive\Desktop"))")
+                $Logger.Value.Log("    PIV Check: ODStatus: Pictures exist: $([System.IO.Directory]::Exists("$env:OneDrive\Pictures"))")
+                $Logger.Value.Log("    PIV Check: ODStatus: My Pictures exist: $([System.IO.Directory]::Exists("$env:OneDrive\My Pictures"))")
+                $Logger.Value.Log("    PIV Check: ODStatus: Documents state: $DocsStatus")
+                $Logger.Value.Log("    PIV Check: ODStatus: Desktop state: $DeskStatus")
+                $Logger.Value.Log("    PIV Check: ODStatus: Pictures state: $PicsStatus")
+                $Logger.Value.Log("    PIV Check: ODStatus: My Pictures state: $PicsStatus2")
             } catch {
                 $UserDataStore["ODStatus"] = "OneFalse"
                 $OneDriveEnabled = $false
-                $Logger.Log($(LL('Debug')), "PIV Check: ODStatus: OneFalse selected based on error state", $error)
+                $Logger.Value.Log($(LL('Debug')), "PIV Check: ODStatus: OneFalse selected based on error state", $error)
             }
         }
-        $Logger.Log("PIV Check: ODStatus: $($UserDataStore["ODStatus"])")
+        $Logger.Value.Log("PIV Check: ODStatus: $($UserDataStore["ODStatus"])")
         $sb = New-Object System.Text.StringBuilder
         $isFirst = $true
         foreach ($item in $UserDataStore.Values) {
@@ -439,9 +439,9 @@ Function WebAttributeCheck {
         $UserDE = [ADSI]($User.Path)
         $UserDE.Put("wwwhomepage",$sb.ToString())
         $UserDE.SetInfo()
-        $Logger.Log('PIV Check: Check complete')
+        $Logger.Value.Log('PIV Check: Check complete')
     } catch {
-        $Logger.Log('PIV Check: Check failed')
+        $Logger.Value.Log($(LL("Debug")), 'PIV Check: Check failed', $_.Exception)
     } finally {
         Pop-Location
     }
@@ -478,8 +478,12 @@ Function Get-UserGroup {
     $Searcher.Filter = "(&(objectCategory=person)(objectClass=user)(samAccountName=$($env:USERNAME)))"
     $Searcher.SearchRoot = "LDAP://DC=med,DC=ds,DC=osd,DC=mil"
     $null = $Searcher.PropertiesToLoad.Add("memberOf")
-    $User = $Searcher.FindOne()
-    return (($User.Properties.memberof | Select-String -Pattern 'CN=(?<group>[^,]*)' -AllMatches).Matches.Groups | Where-Object {$_.Name -eq 'group'} | Select-Object Value).Value
+    try {
+        $User = $Searcher.FindOne()
+        return (($User.Properties.memberof | Select-String -Pattern 'CN=(?<group>[^,]*)' -AllMatches).Matches.Groups | Where-Object {$_.Name -eq 'group'} | Select-Object Value).Value
+    } catch {
+        return $null
+    }
 }
 
 Function MapDrive {
@@ -501,36 +505,36 @@ Function MapDrive {
         [Parameter(Mandatory=$true)][string]$UNC,
         [ref]$Logger
     )
-    $Logger.Log("MapDrive: Begin attempt to map $UNC")
+    $Logger.Value.Log("MapDrive: Begin attempt to map $UNC")
     try {
         $null = ([System.IO.DirectoryInfo]::new($UNC)).GetDirectories()
     } catch {
-        $Logger.Log("MapDrive: Function exited.  User does not have rights to $UNC")
+        $Logger.Value.Log("MapDrive: Function exited.  User does not have rights to $UNC")
         return $null
     }
     if ($Letter -match '(?<letter>[A-Za-z])') {
         $Letter = -join($Matches.letter, ':')
     } else {
-        $Logger.Log($(LL('Error')), "MapDrive: Invalid drive letter '$letter'")
+        $Logger.Value.Log($(LL('Error')), "MapDrive: Invalid drive letter '$letter'")
         return $null
     }
     if ($Letter.Substring(0,1) -in (Get-PSDrive | Select-Object Name).Name) {
-        $Logger.Log("MapDrive: Skipped already mapped '$letter'")
+        $Logger.Value.Log("MapDrive: Skipped already mapped '$letter'")
         return $null
     }
     try {
         if ($PSCmdlet.ShouldProcess($unc)) {
             net use $letter $unc /PERSISTENT:YES
-            $Logger.Log("MapDrive: Sucessfully mapped drive $letter.")
+            $Logger.Value.Log("MapDrive: Sucessfully mapped drive $letter.")
         } {
-            $Logger.Log("MapDrive: Mapping of $letter prevented by ShouldProcess")
+            $Logger.Value.Log("MapDrive: Mapping of $letter prevented by ShouldProcess")
         }
     } catch {
-        $Logger.Log($(LL('Error')), "MapDrive: Net use command failed with letter $letter and path $unc")
+        $Logger.Value.Log($(LL('Error')), "MapDrive: Net use command failed with letter $letter and path $unc")
         return $false
     }
     trap [System.UnauthorizedAccessException] {
-        $Logger.Log("MapDrive: Function exited.  User does not have rights to $UNC")
+        $Logger.Value.Log("MapDrive: Function exited.  User does not have rights to $UNC")
     }
 }
 
@@ -558,25 +562,25 @@ Function MapAllDrives {
         [List[Hashtable]]$GlobalMaps,
         [ref]$Logger
     )
-    $Logger.Log('MapAllDrives: Begin')
+    $Logger.Value.Log('MapAllDrives: Begin')
     if ($GlobalMaps) {
-        $Logger.Log('MapAllDrives: GlobalMaps')
+        $Logger.Value.Log('MapAllDrives: GlobalMaps')
         foreach ($Mapping in $GlobalMaps) {
-            $null = MapDrive($Mapping.Letter, $Mapping.UNC, [ref]$Logging)
+            $null = MapDrive -Letter $Mapping.Letter -UNC $Mapping.UNC -Logger $Logger
         }
     }
     if (($Location -eq $LocationList[$LocationList.Count-1]) -or ($null -eq $Location) -or ($Location.Length -eq 0)) {
-        $Logger.Log('MapAllDrives: DefaultMaps')
+        $Logger.Value.Log('MapAllDrives: DefaultMaps')
         foreach ($Mapping in $MappingList[$LocationList.Count-1]) {
-            $null = MapDrive($Mapping.Letter, $Mapping.UNC, [ref]$Logging)
+            $null = MapDrive -Letter $Mapping.Letter -UNC $Mapping.UNC -Logger $Logger
         }
         return
     }
     for($i=0;$i -lt $LocationList.Count-1;$i++) {
         if ($Location -eq $LocationList[$i]) {
-            $Logger.Log('MapAllDrives: LocationMaps')
+            $Logger.Value.Log('MapAllDrives: LocationMaps')
             foreach ($Mapping in $MappingList[$i]) {
-                $null = MapDrive($Mapping.Letter, $Mapping.UNC, [ref]$Logging)
+                $null = MapDrive -Letter $Mapping.Letter -UNC $Mapping.UNC -Logger $Logger
             }
             break
         }
@@ -606,11 +610,11 @@ Function Set-SpecialtyDrive {
         [List[SpecialtyMap]]$SpecialtyList,
         [ref]$Logger
     )
-    $Logger.Log('Set-SpecialtyDrives: Begin')
+    $Logger.Value.Log('Set-SpecialtyDrives: Begin')
     foreach ($SpecialtyMap in $SpecialtyList) {
         if ($UserGroups -contains $SpecialtyMap.Group) {
             if ($PSCmdlet.ShouldProcess($SpecialtyMap.UNC)) {
-                $null = MapDrive($SpecialtyMap.Letter, $SpecialtyMap.UNC, [ref]$Logger)
+                $null = MapDrive -Letter $SpecialtyMap.Letter -UNC $SpecialtyMap.UNC -Logger $Logger
             }
         }
     }
@@ -636,12 +640,12 @@ Function UnmapDrive {
             $Letter = -join($Matches.letter, ':')
             try {
                 net use $Letter /DELETE /Y
-                $Logger.Log("MapDrive: Sucessfully unmapped drive $letter.")
+                $Logger.Value.Log("MapDrive: Sucessfully unmapped drive $letter.")
             } catch {
-                $Logger.Log($(LL('Error')), "UnmapDrive: failed to unmap drive $letter.  Not unexpected")
+                $Logger.Value.Log($(LL('Error')), "UnmapDrive: failed to unmap drive $letter.  Not unexpected")
             }
         } else {
-            $Logger.Log($(LL('Error')), "UnmapDrive: Invalid drive letter '$letter'")
+            $Logger.Value.Log($(LL('Error')), "UnmapDrive: Invalid drive letter '$letter'")
             continue
         }
     }
@@ -664,29 +668,29 @@ Function ProfileRedirection {
         $shellFolders = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
         $userShellFolders = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
         $destinations = $shellFolders, $userShellFolders
-        $Logger.Log("ProfileRedirection: OneDrivePath $OneDrive")
+        $Logger.Value.Log("ProfileRedirection: OneDrivePath $OneDrive")
         if ([System.IO.Directory]::Exists($OneDrive)) {
-            $Logger.Log("ProfileRedirection: OneDrivePath Detected")
+            $Logger.Value.Log("ProfileRedirection: OneDrivePath Detected")
             foreach ($destination in $destinations) {
-                $Logger.Log("ProfileRedirection: Setting Keys At $destination")
+                $Logger.Value.Log("ProfileRedirection: Setting Keys At $destination")
                 Set-ItemProperty -Path $destination -Name 'Personal' -Value "$($OneDrive)\Documents"
                 Set-ItemProperty -Path $destination -Name 'My Music' -Value "$($OneDrive)\My Music"
                 Set-ItemProperty -Path $destination -Name 'My Pictures' -Value "$($OneDrive)\My Pictures"
                 Set-ItemProperty -Path $destination -Name 'My Video' -Value "$($OneDrive)\My Video"
             }
         } else {
-            $Logger.Log("ProfileRedirection: OneDrivePath Not Detected")
+            $Logger.Value.Log($(LL("Warning")), "ProfileRedirection: OneDrivePath Not Detected")
             foreach ($destination in $destinations) {
-                $Logger.Log("ProfileRedirection: Setting Keys At $destination")
+                $Logger.Value.Log("ProfileRedirection: Setting Keys At $destination")
                 Set-ItemProperty -Path $destination -Name 'Personal' -Value "$($env:USERPROFILE)\Documents"
                 Set-ItemProperty -Path $destination -Name 'My Music' -Value "$($env:USERPROFILE)\My Music"
                 Set-ItemProperty -Path $destination -Name 'My Pictures' -Value "$($env:USERPROFILE)\My Pictures"
                 Set-ItemProperty -Path $destination -Name 'My Video' -Value "$($env:USERPROFILE)\My Video"
             }
         }
-        $Logger.Log('ProfileRediction: Modified user shell folders')
+        $Logger.Value.Log('ProfileRediction: Modified user shell folders')
     } catch {
-        $Logger.Log($(LL('Error')), 'ProfileRediction: Failed to modify user shell folders')
+        $Logger.Value.Log($(LL('Error')), 'ProfileRediction: Failed to modify user shell folders')
     }
 }
 
@@ -702,7 +706,7 @@ Function IndividualFileManagement {
     param (
         [ref]$Logger
     )
-    $Logger.Log("IndividualFileManagement: Removing hard coded files")
+    $Logger.Value.Log("IndividualFileManagement: Removing hard coded files")
     Remove-Item -Recurse -Force -Path "$($env:LOCALAPPDATA)\OneLaunch" -Confirm:$false -ErrorAction SilentlyContinue
     Remove-Item -Force -Path C:\Windows\SysWOW64\msxml4.dll -Confirm:$false -ErrorAction SilentlyContinue
     Remove-Item -Force -Path C:\Windows\SysWOW64\msxml4r.dll -Confirm:$false -ErrorAction SilentlyContinue
@@ -720,7 +724,7 @@ Function LocalFileCopy {
     param (
         [ref]$Logger
     )
-    $Logger.Log("LocalFileCopy: Copying list of hard coded files")
+    $Logger.Value.Log("LocalFileCopy: Copying list of hard coded files")
 }
 
 Function LaunchProcesses {
@@ -740,7 +744,7 @@ Function LaunchProcesses {
         [List[System.Diagnostics.ProcessStartInfo]]$PSIList,
         [ref]$Logger
     )
-    $Logger.Log("LaunchProcess begin")
+    $Logger.Value.Log("LaunchProcess begin")
     foreach ($Psi in $PSIList) {
         Start-Process -FilePath $Psi.FileName -ArgumentList $Psi.ArgumentList -WindowStyle Hidden
     }
@@ -786,18 +790,25 @@ Function CheckForAlert {
     }
 
     if (Test-Path "$basedir\noalert.txt") {
-        $Logger.Log('CheckForAlert: Exempt')
+        $Logger.Value.Log('CheckForAlert: Exempt')
         return $null
     }
-
-    if ((whoami /upn) -match '\.ad(s|w)@mil$') {
-        $Logger.Log('CheckForAlert: Exempt')
-        return $null
+    try {
+        if ($env:COMPUTERNAME -eq $env:USERDOMAIN) {
+            $Logger.Value.Log($(LL("Warning")), "CheckForAlert: Unjoined machine")
+            return $null
+        }
+        if ((whoami /upn) -match '\.ad(s|w)@mil$') {
+            $Logger.Value.Log('CheckForAlert: Exempt')
+            return $null
+        }
+    } catch {
+        $Logger.Value.Log($(LL("Error")), "CheckForAlert: Cannot obtain user UPN")
     }
 
     #If we aren't doing periodic alerts, just forward to CallAlert and move on
     if (-not $doPeriodic) {
-        $Logger.Log('CheckForAlert: Non-periodic CallAlert')
+        $Logger.Value.Log('CheckForAlert: Non-periodic CallAlert')
         return CallAlert -AlertFile $AlertFile -RunOnServer:$RunOnServer
     }
 
@@ -815,10 +826,10 @@ Function CheckForAlert {
     $fileDateIsWithinAlertWindow = ($fileSpan -le $missedAlertWindow)
 
     if ($todayIsInAlertWindow -and -not $fileDateIsWithinAlertWindow) {
-        $Logger.Log('CheckForAlert: Periodic CallAlert')
+        $Logger.Value.Log('CheckForAlert: Periodic CallAlert')
         return CallAlert -AlertFile $AlertFile -RunOnServer:$RunOnServer
     } else {
-        $Logger.Log('CheckForAlert: Out of phase for periodic CallAlert')
+        $Logger.Value.Log('CheckForAlert: Out of phase for periodic CallAlert')
         return $null
     }
 }
@@ -856,7 +867,7 @@ Function CallAlert {
     }
 
     if (Test-Path $AlertFile) {
-        $Logger.Log('CallAlert: Alert file exists.')
+        $Logger.Value.Log('CallAlert: Alert file exists.')
         Invoke-Item $AlertFile
         Set-Content -Path "$basedir\alert.txt" -Value $null
         $(Get-Item "$basedir\alert.txt").lastwritetime=$(Get-Date)
@@ -880,7 +891,7 @@ Function Show-Totd {
         [Parameter(Mandatory=$true)][string]$BasePath,
         [ref]$Logger
     )
-    $Logger.Log('Show-Totd: Invoked')
+    $Logger.Value.Log('Show-Totd: Invoked')
 
     if (Test-Path "$($env:USERPROFILE)\OneDrive - militaryhealth") {
         $profDir = "$($env:USERPROFILE)\OneDrive - militaryhealth"
@@ -889,20 +900,20 @@ Function Show-Totd {
     }
 
     if (Test-Path "$profDir\nototd.txt") {
-        $Logger.Log('Show-Totd: Exempt')
+        $Logger.Value.Log('Show-Totd: Exempt')
         return
     }
 
     if ((whoami /upn) -match '\.ad(s|w)\@mil') {return}
     $TodaysPath = "$BasePath\$((Get-Date).DayOfWeek)"
     if (-not (Test-Path $TodaysPath)) {return}
-    $Logger.Log('Show-Totd: TodayPath Exists')
+    $Logger.Value.Log('Show-Totd: TodayPath Exists')
     $image = Get-ChildItem -path $TodaysPath -Recurse -Include  *.png,*.jpg,*.jpeg,*.bmp -Name | Sort-Object -Property LastWriteTime | Select-Object -last 1
     if ($null -eq $image) {return}
-    $Logger.Log('Show-Totd: Image in TodayPath Exists')
+    $Logger.Value.Log('Show-Totd: Image in TodayPath Exists')
     $imagePath = "$($TodaysPath)\$($image)"
     $file = Get-Item ($imagePath)
-    $Logger.Log("Show-Totd: TargetImage: $file")
+    $Logger.Value.Log("Show-Totd: TargetImage: $file")
     [void][reflection.assembly]::LoadWithPartialName("System.Drawing")
     $img = [System.Drawing.Image]::FromFile($file)
     [void][reflection.assembly]::LoadWithPartialName("System.Windows.Forms")
@@ -918,7 +929,7 @@ Function Show-Totd {
     $form.Controls.Add($pictureBox)
     $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
     $form.Add_Shown( { $form.Activate() } )
-    $Logger.Log('Show-Totd: Image Displayed')
+    $Logger.Value.Log('Show-Totd: Image Displayed')
     $form.ShowDialog()
 }
 
@@ -944,7 +955,7 @@ Function Show-NewTotd {
         [Parameter(Mandatory=$true)][xml]$Xaml,
         [ref]$Logger
     )
-    $Logger.Log('Show-NewTotd: Invoked')
+    $Logger.Value.Log('Show-NewTotd: Invoked')
 
     if (Test-Path "$($env:USERPROFILE)\OneDrive - militaryhealth") {
         $profDir = "$($env:USERPROFILE)\OneDrive - militaryhealth"
@@ -953,13 +964,13 @@ Function Show-NewTotd {
     }
 
     if ((Test-Path "$profDir\nototd.txt") -or ((whoami /upn) -match '\.ad(s|w)\@mil')) {
-        $Logger.Log('Show-NewTotd: Exempt')
+        $Logger.Value.Log('Show-NewTotd: Exempt')
         return
     }
 
     $connection = GenerateSQLConnection($ServerName, $DBName, [ref]$Logger)
 
-    $Logger.Log('Show-NewTotd: Retrieving Tip')
+    $Logger.Value.Log('Show-NewTotd: Retrieving Tip')
     $cmd = New-Object System.Data.SqlClient.SqlCommand -Property @{
         Connection = $connection
         CommandType = [System.Data.CommandType]::StoredProcedure
@@ -975,7 +986,7 @@ Function Show-NewTotd {
 
     $connection.Close()
     if ($returned -eq 0 -or $null -eq $dt.TipID_PK -or $dt.TipID_PK -is [System.DBNull]) {
-        $Logger.Log('Show-NewTotd: No Tip Found')
+        $Logger.Value.Log('Show-NewTotd: No Tip Found')
         return
     }
 
@@ -984,7 +995,7 @@ Function Show-NewTotd {
     $DisplayDate = $dt.DisplayDate
 
     $dt.Dispose()
-    $Logger.Log('Show-NewTotd: Tip Found, Constructing Display')
+    $Logger.Value.Log('Show-NewTotd: Tip Found, Constructing Display')
 
     [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')    | Out-Null
     [System.Reflection.Assembly]::LoadWithPartialName('PresentationFramework')   | Out-Null
@@ -1006,7 +1017,7 @@ Function Show-NewTotd {
         $Tip_bntOK.Add_Click({ $TipWindow.Close() })
 
     $null = $TipWindow.ShowDialog()
-    $Logger.Log('Show-NewTotd: Display Closed by User')
+    $Logger.Value.Log('Show-NewTotd: Display Closed by User')
 }
 
 Function RemovePrinters {
@@ -1021,18 +1032,18 @@ Function RemovePrinters {
 
         [ref]$Logger
     )
-    $Logger.Log('RemovePrinters: Begin')
+    $Logger.Value.Log('RemovePrinters: Begin')
     $RemovalList = Get-Printer | Where-Object {$_.ComputerName -in $InvalidPrintServers -or $_.Name -in $InvalidPrinterNames}
     if ($RemovalList -is [ciminstance]) {
-        $Logger.Log("RemovePrinters: Removing $($RemovalList.Name)")
+        $Logger.Value.Log("RemovePrinters: Removing $($RemovalList.Name)")
         $RemovalList | Remove-Printer
     } elseif ($RemovalList -is [object[]]) {
         foreach ($Printer in $RemovalList) {
-            $Logger.Log("RemovePrinters: Removing $($Printer.Name)")
+            $Logger.Value.Log("RemovePrinters: Removing $($Printer.Name)")
         }
         $RemovalList | Remove-Printer
     } else {
-        $Logger.Log('RemovePrinters: No matching printers to remove')
+        $Logger.Value.Log('RemovePrinters: No matching printers to remove')
     }
 }
 
@@ -1051,13 +1062,13 @@ Function HideWindow {
     param (
         [ref]$Logger
     )
-    $Logger.Log('HideWindow: Begin')
+    $Logger.Value.Log('HideWindow: Begin')
     if (-not (Test-Path variable:global:psISE)) {
         Add-Type -Name win -Member '[DllImport("user32.dll")] public static extern bool ShowWindow(int handle, int state);' -Namespace native
         [native.win]::ShowWindow([System.Diagnostics.Process]::GetCurrentProcess().MainWindowHandle, 0)
-        $Logger.Log('HideWindow: Hidden.')
+        $Logger.Value.Log('HideWindow: Hidden.')
     } else {
-        $Logger.Log('HideWindow: Not hidden.')
+        $Logger.Value.Log('HideWindow: Not hidden.')
     }
 }
 
@@ -1077,11 +1088,14 @@ Function InvokeScheduledTasks {
         [ref]$Logger
     )
     foreach ($TaskName in $TaskList) {
+        if ($null -eq (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+            continue
+        }
         try {
             Start-ScheduledTask -TaskName $TaskName
-            $Logger.Log("InvokeScheduledTasks: Scheduled task created - $TaskName.")
+            $Logger.Value.Log("InvokeScheduledTasks: Scheduled task created - $TaskName.")
         } catch {
-            $Logger.Log($(LL('Error')), 'InvokeScheduledTasks: Scheduled task creation failed.')
+            $Logger.Value.Log($(LL('Error')), 'InvokeScheduledTasks: Scheduled task creation failed.')
         }
     }
 }
@@ -1105,12 +1119,12 @@ Function Initialize-EudLogger {
 
     $eudLogger.SetLoggingPaths($loggingPaths)
     $eudLogger.SiteCode = $Preferences.GlobalVariables.SiteCode
-    $server = $Preferences.DatabaseVariables.DatabaseServer
-    $database = $Preferences.DatabaseVariables.DatabaseName
-    $eudLogger.Connection = GenerateSQLConnection($server, $database, [ref]$Logger)
     $eudLogger.LogToDB = $Preferences.LoggingOverrides.LogToDB -or $SQLOverride
     $eudLogger.LogToFile = $Preferences.LoggingOverrides.LogToFiles
     $eudLogger.LogToTS = $Preferences.LoggingOverrides.LogTSData
+
+    $eudLogger.Connection = GenerateSQLConnection -ServerName $prefs.DatabaseVariables.DatabaseServer -DBName $prefs.DatabaseVariables.DatabaseName -Logger $Logger
+
     return $eudLogger
 }
 
@@ -1141,6 +1155,10 @@ Function Update-LogCache {
                     Remove-Item "$($env:APPDATA)\LLT\cache.json" -Force
                 }
             }
+        }
+    } else {
+        if ($eudLogger.CacheNeeded) {
+            Set-Content -Path "$($env:APPDATA)\LLT\cache.json" -Value $($eudLogger.GetJsonData())
         }
     }
 }
@@ -1222,12 +1240,12 @@ foreach ($specialty in $prefs.MappingVariables.SpecialtyMaps) {
     $SpecialtyMaps.Add($temp)
     $SpecialtyGroups.Add($specialty.Group)
 }
-$
+
 foreach ($entry in $prefs.ProcessLaunch) {
     $thisPSI = [System.Diagnostics.ProcessStartInfo]::new()
     $thisPSI.FileName = $entry.FilePath
     foreach ($arg in $entry.ArgumentList) {
-        $thisPSI.ArgumentList.Add($arg)
+        $thisPSI.Arguments += " $arg"
     }
     $ProcessList.Add($thisPSI)
 }
@@ -1242,16 +1260,16 @@ $Logger.Log('Environment: Generated data structures from preferences')
 # Next, drive mappings are established, and general misc work is done
 # At this time, I believe the items in IndividualFileManagement are no longer required, however the function remains as a placeholder for future IA requests
 
-$eudLogger = Initialize-EudLogger($prefs, $UseSQL, [ref]$Logger)
+$eudLogger = Initialize-EudLogger -Preferences $prefs -SQLOverride $UseSQL -Logger ([ref]$Logger)
 $UserGroups = Get-UserGroup
 
 if ($prefs.FunctionExecution.CheckForAlert) {
-    CheckForAlert($AlertFile, [ref]$Logger, $StartDate, $Span, $DaysAfterAlertDateToShowMissedAlert, $DoPeriodic)
+    CheckForAlert -AlertFile $AlertFile -baseDate $StartDate -Interval $Span -missedAlertWindow $DaysAfterAlertDateToShowMissedAlert -doPeriodic:$DoPeriodic -Logger ([ref]$Logger)
 }
 $ODStatus = $null
 if ($prefs.FunctionExecution.WebAttributeCheck) {
     $clean = $prefs.FunctionExecution.CleanCerts
-    $return = WebAttributeCheck($clean, [ref]$Logger)
+    $return = WebAttributeCheck -Clean $clean -Logger ([ref]$Logger)
     $ODStatus = $return.OneDrive.Where({$null -ne $_})[0]
     $eudLogger.ODStatus = $ODStatus
     $eudLogger.Exception = $return.Ex
@@ -1270,21 +1288,21 @@ if ($prefs.FunctionExecution.AppLogging) {
     $eudLogger.WriteAppData()
 }
 if ($prefs.FunctionExecution.Unmap) {
-    $null = UnmapDrive($DrivesToUnMap, [ref]$Logger)
+    $null = UnmapDrive -Letters $DrivesToUnMap -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.Map) {
-    MapAllDrives($Location, $LocationList, $MappingList, $GlobalMaps, [ref]$Logger)
+    MapAllDrives -Location $Location -LocationList $LocationList -MappingList $MappingList -GlobalMaps $GlobalMaps -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.SpecialtyMap) {
     if ($UserGroups | Where-Object {$SpecialtyGroups.ToArray() -contains $_}) {
-        Set-SpecialtyDrives($UserGroups, $SpecialtyMaps, [ref]$Logger)
+        Set-SpecialtyDrive -UserGroups $UserGroups -SpecialityList $SpecialtyMaps -Logger ([ref]$Logger)
     }
 }
 if ($prefs.FunctionExecution.ProfileRedirection) {
-    ProfileRedirection([ref]$Logger)
+    ProfileRedirection -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.IARemoval) {
-    IndividualFileManagement([ref]$Logger)
+    IndividualFileManagement -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.FastLog) {
     $Logger.Log('Environment: Writing fastlog')
@@ -1293,19 +1311,19 @@ if ($prefs.FunctionExecution.FastLog) {
     $(Get-Item "$($FastLogLoc)$($filename)").lastwritetime=$(Get-Date)
 }
 if ($prefs.FunctionExecution.LocalFileCopy) {
-    LocalFileCopy([ref]$Logger)
+    LocalFileCopy -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.GlobalPrinterAdd) {
     Start-Process -FilePath rundll32 -ArgumentList "printui.dll,PrintUIEntry /in /n $($GlobalPrinter) /q"
 }
 if ($prefs.FunctionExecution.ScheduledTaskLaunch) {
-    InvokeScheduledTasks($ScheduledTaskList, [ref]$Logger)
+    InvokeScheduledTasks -TaskList $ScheduledTaskList -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.PrinterRemoval) {
-    RemovePrinters($(,$InvalidPrintServers), $(,$InvalidPrinterNames), [ref]$Logger)
+    RemovePrinters -InvalidPrintServers $(,$InvalidPrintServers) -InvalidPrinterNames $(,$InvalidPrinterNames) -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.ProcessLaunch) {
-    LaunchProcesses($ProcessList, [ref]$Logger)
+    LaunchProcesses -PSIList $ProcessList -Logger ([ref]$Logger)
 }
 foreach ($task in $prefs.OneTimeTasks) {
     $Now = [DateTime]::Now
@@ -1314,6 +1332,9 @@ foreach ($task in $prefs.OneTimeTasks) {
     $TaskTrigger = New-ScheduledTaskTrigger -Once -At $RunTime
     $TaskTrigger.EndBoundary = $ExpTime.ToString("yyyy-MM-dd'T'HH:mm:ss")
     $TaskSettings = New-ScheduledTaskSettingsSet -DeleteExpiredTaskAfter 00:00:01 -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -Hidden
+    if ([string]::IsNullOrWhiteSpace($task.TaskPath)) {
+        continue
+    }
     $TaskAction = New-ScheduledTaskAction -Execute $task.TaskPath
     try {
         $null = Register-ScheduledTask -TaskName $task.TaskName -Action $TaskAction -Trigger $TaskTrigger -Settings $TaskSettings -ErrorAction SilentlyContinue
@@ -1324,20 +1345,21 @@ foreach ($task in $prefs.OneTimeTasks) {
 }
 
 if ($prefs.FunctionExecution.TipOfTheDay -and -not $prefs.FunctionExecution.NewTotd) {
-    Show-Totd($TotdBasePath, [ref]$Logger)
+    Show-Totd -BasePath $TotdBasePath -Logger ([ref]$Logger)
 } elseif ($prefs.FunctionExecution.NewTotd) {
-    Show-NewTotd($DatabaseServer, $TotdDatabase, $TotdImage, $TotdXaml, [ref]$Logger)
+    Show-NewTotd -ServerName $DatabaseServer -DBName $TotdDatabase -ImagePath $TotdImage -Xaml $TotdXaml -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.SafetyTip) {
-    Show-NewTotd($DatabaseServer, $SafetyDatabase, $TotdImage, $SafetyXaml, [ref]$Logger)
+    Show-NewTotd -ServerName $DatabaseServer -DBName $SafetyDatabase -ImagePath $SafetyXaml -Xaml $TotdXaml -Logger ([ref]$Logger)
 }
 if ($prefs.FunctionExecution.Logging -or $prefs.FunctionExecution.HardwareInventory) {
-    Update-LogCache([ref]$eudLogger)
+    Update-LogCache -eudLogger ([ref]$eudLogger)
 }
 if ($prefs.LoggingOverrides.LogDebugData -or $debug) {
     $fileName = "$($env:USERNAME).txt"
     $Logger.LogFile = [System.IO.Path]::Combine($prefs.FileVariables.DebugLogLoc, $filename)
-    $Logger.WriteLogFile()
+    $Logger.Merge($eudLogger.Logger)
+    $null = $Logger.WriteFile()
 }
 
 $eudLogger.Dispose()
@@ -1345,16 +1367,21 @@ $eudLogger.Dispose()
 # Each function that uses the connection should open and close the connection independently, but this is good housekeeping
 # To ensure dangling connections aren't left
 if ($connection) {
-    CloseSQLConnection($connection, [ref]$Logger)
+    CloseSQLConnection -Connection $connection, -Logger ([ref]$Logger)
 }
 
 exit
 
 # General exception trap to close the $connection if it exists
+
 trap {
-    $Logger.Log("Global: General uncaught error. $($_)")
+    $Logger.Log($(LL("Debug")), "Global: General uncaught error.", $_.Exception)
+    $Logger.Log($(LL("Error")), "  -- $($_.InvocationInfo)")
+    $Logger.Log($(LL("Error")), "  -- $($_.FunctionName)")
+    $Logger.Log($(LL("Error")), "  -- $($_.ScriptLineNumber)")
+    $Logger.Log($(LL("Error")), "  -- $($_.Line)")
     if ($connection -and ($connection.State -ne [System.Data.ConnectionState]::Closed)) {
         $connection.Close()
     }
     continue
-}
+} 

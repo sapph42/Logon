@@ -14,6 +14,7 @@ namespace UnitTests {
         public void ConstructAndInitialize() {
             string tempFolder = Path.GetTempPath();
             Log = new SapphLogger();
+            Log.Log("Test Initialized");
             EudLogger = new EudLogger();
             EudLogger.SetLoggingPath(tempFolder);
             EudLogger.Connection = new SqlConnection();
@@ -23,10 +24,10 @@ namespace UnitTests {
             Log.EnableDebug = false;
             Log.Log("Off domain test");
             Log.LogMode();
-            EudLogger.Logger = Log;
+            EudLogger.Logger = new SapphLogger();
             EudLogger.WriteData();
             Log.Log(LogLevel.None, "");
-            Log.Log(EudLogger.GetJsonData());
+            Log.Merge(EudLogger.Logger);
             string finalPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "log.txt");
             Log.WriteFile(finalPath);
         }
