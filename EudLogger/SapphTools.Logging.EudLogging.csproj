@@ -129,6 +129,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="EudLogger.snk" />
+    <None Include="prefs.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Costura.Fody">
