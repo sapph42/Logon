@@ -86,8 +86,8 @@ public class SapphLogger : ILogger {
                 currentChunk = new LogChunk { Timestamp = timestamp };
                 currentChunk.Lines.Add(line);
                 chunks.Add(currentChunk);
-            } else if (currentChunk is not null) {
-                currentChunk.Lines.Add(line);
+            } else {
+                currentChunk?.Lines.Add(line);
             }
         }
         return chunks;

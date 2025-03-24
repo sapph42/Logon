@@ -28,6 +28,7 @@ namespace UnitTests {
             EudLogger.WriteData();
             Log.Log(LogLevel.None, "");
             Log.Merge(EudLogger.Logger);
+            Log.Log(EudLogger.GetJsonData());
             string finalPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "log.txt");
             Log.WriteFile(finalPath);
         }

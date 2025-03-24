@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace LogViewer {
@@ -50,8 +47,8 @@ namespace LogViewer {
                 if (match.Success) {
                     currentChunk = new StructuredLog(line);
                     logs.Add(currentChunk);
-                } else if (currentChunk != null) {
-                    currentChunk.AppendLine(line);
+                } else {
+                    currentChunk?.AppendLine(line);
                 }
             }
             return logs;
